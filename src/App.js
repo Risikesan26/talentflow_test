@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   CheckCircle, 
-  Clock, 
   User, 
   BookOpen, 
   Award, 
@@ -215,10 +214,9 @@ const TalentFlowDashboard = () => {
   ];
 
   const learningPaths = [
-    { id: 1, title: "Company & Engineering Foundations", progress: 75, modules: 4, completed: 3, estimatedTime: "2h 30m" },
-    { id: 2, title: "Machine Learning Fundamentals", progress: 25, modules: 8, completed: 2, estimatedTime: "4h 15m" },
-    { id: 3, title: "Data Engineering & Tools", progress: 0, modules: 6, completed: 0, estimatedTime: "3h 45m" },
-    { id: 3, title: "Deep Learning & Advanced Topics", progress: 20, modules: 7, completed: 2, estimatedTime: "5h 45m" }    
+    { id: 1, title: "Company Culture & Values", progress: 75, modules: 4, completed: 3, estimatedTime: "2h 30m" },
+    { id: 2, title: "Design System Fundamentals", progress: 25, modules: 8, completed: 2, estimatedTime: "4h 15m" },
+    { id: 3, title: "Product Development Process", progress: 0, modules: 6, completed: 0, estimatedTime: "3h 45m" }
   ];
 
   const achievements = [
@@ -250,6 +248,19 @@ const TalentFlowDashboard = () => {
     setCompletedTasks(newCompleted);
   };
 
+  const [chatMessages, setChatMessages] = React.useState([
+  {
+    id: 1,
+    text: `👋 Hi ${employee.name.split(' ')[0]}! I'm here to help with any onboarding questions you have. What can I assist you with today?`,
+    sender: 'bot',
+    timestamp: new Date()
+  }
+]);
+  const [currentMessage, setCurrentMessage] = React.useState('');
+  const [isTyping, setIsTyping] = React.useState(false);
+  const [isConnected, setIsConnected] = React.useState(true);
+
+
   const getTaskIcon = (type) => {
     switch(type) {
       case 'document': return <FileText size={16} />;
@@ -258,6 +269,89 @@ const TalentFlowDashboard = () => {
       default: return <CheckCircle size={16} />;
     }
   };
+
+  const sendMessageToAPI = async (message) => {
+  try {
+    setIsTyping(true);
+    
+    
+    // Replace with your actual API endpoint
+    const response = await fetch('https://openrouter.ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': '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', // Add your API key
+      },
+      body: JSON.stringify({
+        message: message,
+        userId: employee.name, // or employee ID
+        context: {
+          role: employee.role,
+          department: employee.department,
+          completedTasks: Array.from(completedTasks),
+          onboardingProgress: completionPercentage
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    
+    // Add bot response to chat
+    const botMessage = {
+      id: Date.now() + 1,
+      text: data.response || data.message, // Adjust based on your API response structure
+      sender: 'bot',
+      timestamp: new Date()
+    };
+    
+    setChatMessages(prev => [...prev, botMessage]);
+    
+  } catch (error) {
+    console.error('Error sending message:', error);
+    
+    // Fallback response for errors
+    const errorMessage = {
+      id: Date.now() + 1,
+      text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment or contact HR directly.",
+      sender: 'bot',
+      timestamp: new Date(),
+      isError: true
+    };
+    
+    setChatMessages(prev => [...prev, errorMessage]);
+    setIsConnected(false);
+    
+    // Retry connection after 3 seconds
+    setTimeout(() => setIsConnected(true), 3000);
+  } finally {
+    setIsTyping(false);
+  }
+};
+
+  const handleSendMessage = async (e) => {
+  e.preventDefault();
+  
+  if (!currentMessage.trim()) return;
+  
+  // Add user message to chat
+  const userMessage = {
+    id: Date.now(),
+    text: currentMessage,
+    sender: 'user',
+    timestamp: new Date()
+  };
+  
+  setChatMessages(prev => [...prev, userMessage]);
+  const messageToSend = currentMessage;
+  setCurrentMessage('');
+  
+  // Send to API
+  await sendMessageToAPI(messageToSend);
+};
 
   const filteredKnowledge = knowledgeBase.filter(item => 
     item.toLowerCase().includes(searchQuery.toLowerCase())
@@ -444,6 +538,8 @@ const TalentFlowDashboard = () => {
                 </div>
               </div>
             </div>
+
+            
 
             {/* Quick Actions Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -750,90 +846,183 @@ const TalentFlowDashboard = () => {
       </div>
 
       {/* HR Chatbot */}
-      {chatOpen && (
-        <div style={styles.chatbot}>
-          <div style={{ 
-            padding: '16px', 
-            borderBottom: '1px solid #e5e7eb', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between' 
+{chatOpen && (
+  <div style={styles.chatbot}>
+    <div style={{ 
+      padding: '16px', 
+      borderBottom: '1px solid #e5e7eb', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between' 
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ 
+          width: '32px', 
+          height: '32px', 
+          backgroundColor: '#8b5cf6', 
+          borderRadius: '50%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center' 
+        }}>
+          <Bot color="white" size={16} />
+        </div>
+        <div>
+          <h4 style={{ fontWeight: '600', margin: 0, fontSize: '14px' }}>HR Assistant</h4>
+          <p style={{ 
+            fontSize: '12px', 
+            color: isConnected ? '#10b981' : '#ef4444', 
+            margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                backgroundColor: '#8b5cf6', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}>
-                <Bot color="white" size={16} />
-              </div>
-              <div>
-                <h4 style={{ fontWeight: '600', margin: 0, fontSize: '14px' }}>HR Assistant</h4>
-                <p style={{ fontSize: '12px', color: '#10b981', margin: 0 }}>● Online</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setChatOpen(false)}
-              style={{ 
-                color: '#9ca3af', 
-                background: 'none', 
-                border: 'none', 
-                fontSize: '20px', 
-                cursor: 'pointer',
-                padding: '0',
-                width: '24px',
-                height: '24px'
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <div style={{ padding: '16px', height: '256px', backgroundColor: '#f9fafb' }}>
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '12px', 
-              borderRadius: '8px', 
-              marginBottom: '12px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: isConnected ? '#10b981' : '#ef4444',
+              display: 'inline-block'
+            }} />
+            {isConnected ? 'Online' : 'Reconnecting...'}
+          </p>
+        </div>
+      </div>
+      <button 
+        onClick={() => setChatOpen(false)}
+        style={{ 
+          color: '#9ca3af', 
+          background: 'none', 
+          border: 'none', 
+          fontSize: '20px', 
+          cursor: 'pointer',
+          padding: '0',
+          width: '24px',
+          height: '24px'
+        }}
+      >
+        ×
+      </button>
+    </div>
+    
+    {/* Chat Messages */}
+    <div style={{ 
+      padding: '16px', 
+      height: '300px', 
+      backgroundColor: '#f9fafb',
+      overflowY: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px'
+    }}>
+      {chatMessages.map((message) => (
+        <div 
+          key={message.id}
+          style={{
+            display: 'flex',
+            justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+          }}
+        >
+          <div style={{ 
+            backgroundColor: message.sender === 'user' ? '#3b82f6' : 'white', 
+            color: message.sender === 'user' ? 'white' : '#111827',
+            padding: '10px 14px', 
+            borderRadius: message.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+            maxWidth: '80%',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            fontSize: '14px',
+            lineHeight: '1.4',
+            border: message.isError ? '1px solid #ef4444' : 'none'
+          }}>
+            {message.text}
+            <div style={{
+              fontSize: '11px',
+              opacity: 0.7,
+              marginTop: '4px',
+              color: message.sender === 'user' ? '#bfdbfe' : '#6b7280'
             }}>
-              <p style={{ fontSize: '14px', margin: 0 }}>
-                👋 Hi {employee.name.split(' ')[0]}! I'm here to help with any onboarding questions you have. What can I assist you with today?
-              </p>
-            </div>
-          </div>
-          <div style={{ padding: '16px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input 
-                type="text" 
-                placeholder="Type your question..."
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  fontSize: '14px'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#8b5cf6'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-              />
-              <button style={{
-                ...styles.button,
-                backgroundColor: '#8b5cf6'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#7c3aed'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#8b5cf6'}
-              >
-                Send
-              </button>
+              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
+      ))}
+      
+      {/* Typing Indicator */}
+      {isTyping && (
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <div style={{ 
+            backgroundColor: 'white', 
+            padding: '10px 14px', 
+            borderRadius: '18px 18px 18px 4px',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '2px'
+            }}>
+              {[0, 1, 2].map(i => (
+                <div
+                  key={i}
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    backgroundColor: '#6b7280',
+                    borderRadius: '50%',
+                    animation: `typing 1.5s ease-in-out ${i * 0.2}s infinite`
+                  }}
+                />
+              ))}
+            </div>
+            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px' }}>
+              HR Assistant is typing...
+            </span>
+          </div>
+        </div>
       )}
+    </div>
+    
+    {/* Message Input */}
+    <div style={{ padding: '16px', borderTop: '1px solid #e5e7eb' }}>
+      <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '8px' }}>
+        <input 
+          type="text" 
+          value={currentMessage}
+          onChange={(e) => setCurrentMessage(e.target.value)}
+          placeholder="Type your question..."
+          disabled={!isConnected}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            border: '1px solid #d1d5db',
+            borderRadius: '20px',
+            outline: 'none',
+            fontSize: '14px',
+            backgroundColor: isConnected ? 'white' : '#f3f4f6'
+          }}
+          onFocus={(e) => e.target.style.borderColor = '#8b5cf6'}
+          onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+        />
+        <button 
+          type="submit"
+          disabled={!currentMessage.trim() || !isConnected}
+          style={{
+            ...styles.button,
+            backgroundColor: (!currentMessage.trim() || !isConnected) ? '#9ca3af' : '#8b5cf6',
+            cursor: (!currentMessage.trim() || !isConnected) ? 'not-allowed' : 'pointer',
+            borderRadius: '20px',
+            padding: '10px 16px'
+          }}
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
