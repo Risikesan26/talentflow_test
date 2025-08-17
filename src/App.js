@@ -198,11 +198,11 @@ const TalentFlowDashboard = () => {
   const [level, setLevel] = React.useState(2);
 
   const employee = {
-    name: "Sarah Chen",
-    role: "Senior Product Designer", 
-    department: "Design Team",
+    name: "Risikesan",
+    role: "ML Engineer", 
+    department: "Developer Team",
     startDate: "2025-08-15",
-    avatar: "SC"
+    avatar: "RY"
   };
 
   const onboardingTasks = [
@@ -215,9 +215,10 @@ const TalentFlowDashboard = () => {
   ];
 
   const learningPaths = [
-    { id: 1, title: "Company Culture & Values", progress: 75, modules: 4, completed: 3, estimatedTime: "2h 30m" },
-    { id: 2, title: "Design System Fundamentals", progress: 25, modules: 8, completed: 2, estimatedTime: "4h 15m" },
-    { id: 3, title: "Product Development Process", progress: 0, modules: 6, completed: 0, estimatedTime: "3h 45m" }
+    { id: 1, title: "Company & Engineering Foundations", progress: 75, modules: 4, completed: 3, estimatedTime: "2h 30m" },
+    { id: 2, title: "Machine Learning Fundamentals", progress: 25, modules: 8, completed: 2, estimatedTime: "4h 15m" },
+    { id: 3, title: "Data Engineering & Tools", progress: 0, modules: 6, completed: 0, estimatedTime: "3h 45m" },
+    { id: 3, title: "Deep Learning & Advanced Topics", progress: 20, modules: 7, completed: 2, estimatedTime: "5h 45m" }    
   ];
 
   const achievements = [
